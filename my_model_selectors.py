@@ -105,5 +105,28 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        cur_comp_count = self.min_n_components
+        best_logL = -100000
+        best_comp_count = self.min_n_components
+        while cur_comp_count <= self.max_n_components:
+            logLs = []
+            split_count = 3
+            if len(self.sequences) < 3:
+                split_count = len(self.sequences)
+            split_method = KFold(n_splits=split_count)
+            for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                train_X, train_lengths = combine_sequences(cv_train_idx, self.sequences)
+
+                if len(train_X) >= cur_comp_count:
+                    test_X, test_lengths = combine_sequences(cv_train_idx, self.sequences)
+                    candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                        random_state=self.random_state, verbose=False).fit(train_X, train_lengths)
+                    logL = candidate.score(test_X, test_lengths)
+                    logLs.append(logL)
+            if len(logLs) > 0:
+                avg_logL = np.mean(logLs)
+                if avg_logL > best_logL:
+                    best_logL = avg_logL
+                    best_comp_count = cur_comp_count
+            cur_comp_count += 1
+        return self.base_model(best_comp_count)
