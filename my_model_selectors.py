@@ -75,9 +75,19 @@ class SelectorBIC(ModelSelector):
         :return: GaussianHMM object
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        cur_comp_count = self.min_n_components
+        best_bic = 100000000
+        best_comp_count = self.min_n_components
+        while cur_comp_count <= self.max_n_components:
+            candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+            logL = candidate.score(self.X, self.lengths)
+            bic = (-2 * logL) + (cur_comp_count * np.log(len(self.X)))
+            if bic < best_bic:
+                best_bic = bic
+                best_comp_count = cur_comp_count
+            cur_comp_count += 1
+        return self.base_model(best_comp_count)
 
 
 class SelectorDIC(ModelSelector):
