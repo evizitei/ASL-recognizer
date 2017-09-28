@@ -102,9 +102,28 @@ class SelectorDIC(ModelSelector):
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-        # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        cur_comp_count = self.min_n_components
+        best_dic = 100000000
+        best_comp_count = self.min_n_components
+        all_words = ['FISH', 'BOOK', 'VEGETABLE', 'FUTURE', 'JOHN']
+        alternate_words = [w for w in all_words if w != self.this_word]
+        while cur_comp_count <= self.max_n_components:
+            candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+            logL = candidate.score(self.X, self.lengths)
+            otherLogLs = []
+            for w in alternate_words:
+                alt_X, alt_lengths = self.hwords[w]
+                altLogL = candidate.score(alt_X, alt_lengths)
+                otherLogLs.append(altLogL)
+            meanAltLog = np.mean(otherLogLs)
+            dic = logL - meanAltLog
+            if dic > best_dic:
+                best_dic = dic
+                best_comp_count = cur_comp_count
+            cur_comp_count += 1
+        return self.base_model(best_comp_count)
 
 
 class SelectorCV(ModelSelector):
