@@ -79,13 +79,16 @@ class SelectorBIC(ModelSelector):
         best_bic = 100000000
         best_comp_count = self.min_n_components
         while cur_comp_count <= self.max_n_components:
-            candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
-                random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
-            logL = candidate.score(self.X, self.lengths)
-            bic = (-2 * logL) + (cur_comp_count * np.log(len(self.X)))
-            if bic < best_bic:
-                best_bic = bic
-                best_comp_count = cur_comp_count
+            try:
+                candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+                logL = candidate.score(self.X, self.lengths)
+                bic = (-2 * logL) + (cur_comp_count * np.log(len(self.X)))
+                if bic < best_bic:
+                    best_bic = bic
+                    best_comp_count = cur_comp_count
+            except ValueError:
+                print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
             cur_comp_count += 1
         return self.base_model(best_comp_count)
 
@@ -109,19 +112,22 @@ class SelectorDIC(ModelSelector):
         all_words = ['FISH', 'BOOK', 'VEGETABLE', 'FUTURE', 'JOHN']
         alternate_words = [w for w in all_words if w != self.this_word]
         while cur_comp_count <= self.max_n_components:
-            candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
-                random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
-            logL = candidate.score(self.X, self.lengths)
-            otherLogLs = []
-            for w in alternate_words:
-                alt_X, alt_lengths = self.hwords[w]
-                altLogL = candidate.score(alt_X, alt_lengths)
-                otherLogLs.append(altLogL)
-            meanAltLog = np.mean(otherLogLs)
-            dic = logL - meanAltLog
-            if dic > best_dic:
-                best_dic = dic
-                best_comp_count = cur_comp_count
+            try:
+                candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                    random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+                logL = candidate.score(self.X, self.lengths)
+                otherLogLs = []
+                for w in alternate_words:
+                    alt_X, alt_lengths = self.hwords[w]
+                    altLogL = candidate.score(alt_X, alt_lengths)
+                    otherLogLs.append(altLogL)
+                meanAltLog = np.mean(otherLogLs)
+                dic = logL - meanAltLog
+                if dic > best_dic:
+                    best_dic = dic
+                    best_comp_count = cur_comp_count
+            except ValueError:
+                print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
             cur_comp_count += 1
         return self.base_model(best_comp_count)
 
@@ -147,11 +153,14 @@ class SelectorCV(ModelSelector):
                 train_X, train_lengths = combine_sequences(cv_train_idx, self.sequences)
 
                 if len(train_X) >= cur_comp_count:
-                    test_X, test_lengths = combine_sequences(cv_train_idx, self.sequences)
-                    candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
-                        random_state=self.random_state, verbose=False).fit(train_X, train_lengths)
-                    logL = candidate.score(test_X, test_lengths)
-                    logLs.append(logL)
+                    try:
+                        test_X, test_lengths = combine_sequences(cv_train_idx, self.sequences)
+                        candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
+                            random_state=self.random_state, verbose=False).fit(train_X, train_lengths)
+                        logL = candidate.score(test_X, test_lengths)
+                        logLs.append(logL)
+                    except ValueError:
+                        print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
             if len(logLs) > 0:
                 avg_logL = np.mean(logLs)
                 if avg_logL > best_logL:
