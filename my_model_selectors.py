@@ -88,7 +88,7 @@ class SelectorBIC(ModelSelector):
                     best_bic = bic
                     best_comp_count = cur_comp_count
             except ValueError:
-                print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
+                continue
             cur_comp_count += 1
         return self.base_model(best_comp_count)
 
@@ -127,7 +127,7 @@ class SelectorDIC(ModelSelector):
                     best_dic = dic
                     best_comp_count = cur_comp_count
             except ValueError:
-                print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
+                continue
             cur_comp_count += 1
         return self.base_model(best_comp_count)
 
@@ -160,7 +160,7 @@ class SelectorCV(ModelSelector):
                         logL = candidate.score(test_X, test_lengths)
                         logLs.append(logL)
                     except ValueError:
-                        print("Could not train %s components for %s" % (cur_comp_count, self.this_word))
+                        continue
             if len(logLs) > 0:
                 avg_logL = np.mean(logLs)
                 if avg_logL > best_logL:
