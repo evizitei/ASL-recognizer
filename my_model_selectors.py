@@ -88,6 +88,7 @@ class SelectorBIC(ModelSelector):
                     best_bic = bic
                     best_comp_count = cur_comp_count
             except ValueError:
+                cur_comp_count += 1
                 continue
             cur_comp_count += 1
         return self.base_model(best_comp_count)
@@ -127,6 +128,7 @@ class SelectorDIC(ModelSelector):
                     best_dic = dic
                     best_comp_count = cur_comp_count
             except ValueError:
+                cur_comp_count += 1
                 continue
             cur_comp_count += 1
         return self.base_model(best_comp_count)
