@@ -108,7 +108,7 @@ class SelectorDIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         cur_comp_count = self.min_n_components
-        best_dic = 100000000
+        best_dic = -100000000
         best_comp_count = self.min_n_components
         all_words = ['FISH', 'BOOK', 'VEGETABLE', 'FUTURE', 'JOHN']
         alternate_words = [w for w in all_words if w != self.this_word]
