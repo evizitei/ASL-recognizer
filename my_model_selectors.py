@@ -83,7 +83,8 @@ class SelectorBIC(ModelSelector):
                 candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
                 logL = candidate.score(self.X, self.lengths)
-                bic = (-2 * logL) + (cur_comp_count * np.log(len(self.X)))
+                p_val = ( cur_comp_count ** 2 ) + ( 2 * cur_comp_count * sum(self.lengths) ) - 1
+                bic = (-2 * logL) + (p_val * np.log(len(self.X)))
                 if bic < best_bic:
                     best_bic = bic
                     best_comp_count = cur_comp_count
@@ -110,18 +111,16 @@ class SelectorDIC(ModelSelector):
         cur_comp_count = self.min_n_components
         best_dic = -100000000
         best_comp_count = self.min_n_components
-        all_words = ['FISH', 'BOOK', 'VEGETABLE', 'FUTURE', 'JOHN']
-        alternate_words = [w for w in all_words if w != self.this_word]
         while cur_comp_count <= self.max_n_components:
             try:
                 candidate = GaussianHMM(n_components=cur_comp_count, covariance_type="diag", n_iter=1000,
                     random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
                 logL = candidate.score(self.X, self.lengths)
                 otherLogLs = []
-                for w in alternate_words:
-                    alt_X, alt_lengths = self.hwords[w]
-                    altLogL = candidate.score(alt_X, alt_lengths)
-                    otherLogLs.append(altLogL)
+                for w, (alt_X, alt_lengths) in self.hwords.items():
+                    if w != self.this_word:
+                        altLogL = candidate.score(alt_X, alt_lengths)
+                        otherLogLs.append(altLogL)
                 meanAltLog = np.mean(otherLogLs)
                 dic = logL - meanAltLog
                 if dic > best_dic:
